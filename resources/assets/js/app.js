@@ -15,11 +15,13 @@ require('./bootstrap');
 Vue.component('chat-messages', require('./components/ChatMessages.vue'));
 //Vue.component('chat-form', require('./components/ChatForm.vue'));
 Vue.component('chat-app', require('./components/ChatApp.vue'));
+Vue.component('MessagesFeed', require('./components/MessagesFeed.vue'));
+Vue.component('MessageComposer', require('./components/MessageComposer.vue'));
 
 const app = new Vue({
     el: '#app',
 
-    /*  data: {
+      data: {
           messages: []
       },
 
@@ -48,5 +50,5 @@ const app = new Vue({
 
               axios.post('/messages', message).then(response => {});
           }
-      }*/
+      }
 });

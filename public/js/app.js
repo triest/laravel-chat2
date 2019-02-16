@@ -11470,36 +11470,46 @@ __webpack_require__(34);
 Vue.component('chat-messages', __webpack_require__(42));
 //Vue.component('chat-form', require('./components/ChatForm.vue'));
 Vue.component('chat-app', __webpack_require__(41));
+Vue.component('MessagesFeed', __webpack_require__(77));
+Vue.component('MessageComposer', __webpack_require__(82));
 
 var app = new Vue({
-    el: '#app'
+    el: '#app',
 
-    /*  data: {
-          messages: []
-      },
-        created() {
-          this.fetchMessages();
-            Echo.private('chat')
-              .listen('MessageSent', (e) => {
-                  this.messages.push({
-                      message: e.message.message,
-                      user: e.user,
-                      date: e.message.created_at
-                  });
-                  console.log(this.messages)
-              });
-      },
-        methods: {
-          fetchMessages() {
-              axios.get('/messages').then(response => {
-                  this.messages = response.data;
-              });
-          },
-          addMessage(message) {
-              this.messages.push(message);
-                axios.post('/messages', message).then(response => {});
-          }
-      }*/
+    data: {
+        messages: []
+    },
+
+    created: function created() {
+        var _this = this;
+
+        this.fetchMessages();
+
+        Echo.private('chat').listen('MessageSent', function (e) {
+            _this.messages.push({
+                message: e.message.message,
+                user: e.user,
+                date: e.message.created_at
+            });
+            console.log(_this.messages);
+        });
+    },
+
+
+    methods: {
+        fetchMessages: function fetchMessages() {
+            var _this2 = this;
+
+            axios.get('/messages').then(function (response) {
+                _this2.messages = response.data;
+            });
+        },
+        addMessage: function addMessage(message) {
+            this.messages.push(message);
+
+            axios.post('/messages', message).then(function (response) {});
+        }
+    }
 });
 
 /***/ }),
@@ -12366,8 +12376,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
-//
-
 
 
 
@@ -12380,22 +12388,53 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     },
     data: function data() {
         return {
-            SelectedContact: null,
+            selectedContact: null,
             messages: [],
-            conacts: []
+            contacts: []
         };
     },
     mounted: function mounted() {
         var _this = this;
 
+        Echo.private('messages.' + this.user.id).listen('NewMessage', function (e) {
+            _this.hanleIncoming(e.message);
+        });
         axios.get('/contacts').then(function (response) {
-            console.log(response.data());
             _this.contacts = response.data;
         });
     },
 
-    components: { Conversation: __WEBPACK_IMPORTED_MODULE_0__Conversation___default.a, ContactsList: __WEBPACK_IMPORTED_MODULE_1__ContactsList___default.a }
+    methods: {
+        startConversationWith: function startConversationWith(contact) {
+            var _this2 = this;
 
+            this.updateUnreadCount(contact, true);
+            axios.get('/conversation/' + contact.id).then(function (response) {
+                _this2.messages = response.data;
+                _this2.selectedContact = contact;
+            });
+        },
+        saveNewMessage: function saveNewMessage(message) {
+            this.messages.push(message);
+        },
+        hanleIncoming: function hanleIncoming(message) {
+            if (this.selectedContact && message.from == this.selectedContact.id) {
+                this.saveNewMessage(message);
+                return;
+            }
+            this.updateUnreadCount(message.from_contact, false);
+        },
+        updateUnreadCount: function updateUnreadCount(contact, reset) {
+            this.contacts = this.contacts.map(function (single) {
+                if (single.id !== contact.id) {
+                    return single;
+                }
+                if (reset) single.unread = 0;else single.unread += 1;
+                return single;
+            });
+        }
+    },
+    components: { Conversation: __WEBPACK_IMPORTED_MODULE_0__Conversation___default.a, ContactsList: __WEBPACK_IMPORTED_MODULE_1__ContactsList___default.a }
 };
 
 /***/ }),
@@ -15075,20 +15114,7 @@ if (typeof jQuery === 'undefined') {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 36 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(37)();
-// imports
-
-
-// module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
-
-// exports
-
-
-/***/ }),
+/* 36 */,
 /* 37 */
 /***/ (function(module, exports) {
 
@@ -33713,7 +33739,7 @@ var Echo = function () {
 
 
 /* styles */
-__webpack_require__(45)
+__webpack_require__(88)
 
 var Component = __webpack_require__(11)(
   /* script */
@@ -33788,12 +33814,18 @@ module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c
     staticClass: "chat-app"
   }, [_c('Conversation', {
     attrs: {
-      "contacts": _vm.SelectedContact,
+      "contact": _vm.selectedContact,
       "messages": _vm.messages
+    },
+    on: {
+      "new": _vm.saveNewMessage
     }
-  }), _vm._v(" "), _c('Conversation', {
+  }), _vm._v(" "), _c('ContactsList', {
     attrs: {
-      "contacts": _vm.Contacts
+      "contacts": _vm.contacts
+    },
+    on: {
+      "selected": _vm.startConversationWith
     }
   })], 1)
 },staticRenderFns: []}
@@ -33833,32 +33865,7 @@ if (false) {
 }
 
 /***/ }),
-/* 45 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(36);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(46)("3f7dd2f7", content, false);
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-01d67219&scoped=true!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./ChatApp.vue", function() {
-     var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-01d67219&scoped=true!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./ChatApp.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
+/* 45 */,
 /* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46062,7 +46069,36 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 
 /* harmony default export */ __webpack_exports__["default"] = {
-    name: "ContactsList"
+    props: {
+        contacts: {
+            type: Array,
+            default: []
+        }
+    },
+    data: function data() {
+        return {
+            selected: this.contacts.length ? this.contacts[0] : null
+        };
+    },
+
+    methods: {
+        selectContact: function selectContact(contact) {
+            this.selected = contact;
+            this.$emit('selected', contact);
+        }
+    },
+    computed: {
+        sortedContacts: function sortedContacts() {
+            var _this = this;
+
+            return _.sortBy(this.contacts, [function (contact) {
+                if (contact == _this.selected) {
+                    return Infinity;
+                }
+                return contact.unread;
+            }]).reverse();
+        }
+    }
 };
 
 /***/ }),
@@ -46071,6 +46107,12 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__MessagesFeed__ = __webpack_require__(77);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__MessagesFeed___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__MessagesFeed__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__MessageComposer__ = __webpack_require__(82);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__MessageComposer___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__MessageComposer__);
+//
+//
 //
 //
 //
@@ -46078,45 +46120,46 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 
+
+
 /* harmony default export */ __webpack_exports__["default"] = {
-    name: "Conversation"
+    props: {
+        contact: {
+            type: Object,
+            default: null
+        },
+        messages: {
+            type: Array,
+            default: []
+        }
+    },
+    methods: {
+        sendMessage: function sendMessage(text) {
+            var _this = this;
+
+            if (!this.contact) {
+                return;
+            }
+            axios.post('/conversation/send', {
+                contact_id: this.contact.id,
+                text: text
+            }).then(function (response) {
+                _this.$emit('new', response.data);
+            });
+        }
+    },
+    components: { MessagesFeed: __WEBPACK_IMPORTED_MODULE_0__MessagesFeed___default.a, MessageComposer: __WEBPACK_IMPORTED_MODULE_1__MessageComposer___default.a }
 };
 
 /***/ }),
-/* 62 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(37)();
-// imports
-
-
-// module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 63 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(37)();
-// imports
-
-
-// module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
-
-// exports
-
-
-/***/ }),
+/* 62 */,
+/* 63 */,
 /* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
 /* styles */
-__webpack_require__(68)
+__webpack_require__(90)
 
 var Component = __webpack_require__(11)(
   /* script */
@@ -46154,7 +46197,7 @@ module.exports = Component.exports
 
 
 /* styles */
-__webpack_require__(69)
+__webpack_require__(86)
 
 var Component = __webpack_require__(11)(
   /* script */
@@ -46237,7 +46280,16 @@ if (false) {
 module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
   return _c('div', {
     staticClass: "conversation"
-  })
+  }, [_c('h1', [_vm._v(_vm._s(_vm.contact ? _vm.contact.name : 'Select a Contact'))]), _vm._v(" "), _c('MessagesFeed', {
+    attrs: {
+      "contact": _vm.contact,
+      "messages": _vm.messages
+    }
+  }), _vm._v(" "), _c('MessageComposer', {
+    on: {
+      "send": _vm.sendMessage
+    }
+  })], 1)
 },staticRenderFns: []}
 module.exports.render._withStripped = true
 if (false) {
@@ -46248,58 +46300,8 @@ if (false) {
 }
 
 /***/ }),
-/* 68 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(62);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(46)("594f7eb4", content, false);
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-1b1d7051&scoped=true!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./ContactsList.vue", function() {
-     var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-1b1d7051&scoped=true!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./ContactsList.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 69 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(63);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(46)("f5b75eec", content, false);
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-b9833f7a&scoped=true!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Conversation.vue", function() {
-     var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-b9833f7a&scoped=true!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Conversation.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
+/* 68 */,
+/* 69 */,
 /* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -57244,6 +57246,432 @@ return /******/ (function(modules) { // webpackBootstrap
 });
 ;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(71).Buffer))
+
+/***/ }),
+/* 75 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ __webpack_exports__["default"] = {
+    props: {
+        contact: {
+            type: Object
+        },
+        messages: {
+            type: Array,
+            required: true
+        }
+    },
+    methods: {
+        scrollToBottom: function scrollToBottom() {
+            var _this = this;
+
+            setTimeout(function () {
+                _this.$refs.feed.scrollTop = _this.$refs.feed.scrollHeight - _this.$refs.feed.clientHeight;
+            }, 50);
+        }
+    },
+    watch: {
+        contact: function contact(_contact) {
+            this.scrollToBottom();
+        },
+        messages: function messages(_messages) {
+            this.scrollToBottom();
+        }
+    }
+};
+
+/***/ }),
+/* 76 */,
+/* 77 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+/* styles */
+__webpack_require__(94)
+
+var Component = __webpack_require__(11)(
+  /* script */
+  __webpack_require__(75),
+  /* template */
+  __webpack_require__(78),
+  /* scopeId */
+  "data-v-eaa0856c",
+  /* cssModules */
+  null
+)
+Component.options.__file = "w:\\domains\\chat5\\chat5\\laravel-chat\\resources\\assets\\js\\components\\MessagesFeed.vue"
+if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
+if (Component.options.functional) {console.error("[vue-loader] MessagesFeed.vue: functional components are not supported with templates, they should use render functions.")}
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-eaa0856c", Component.options)
+  } else {
+    hotAPI.reload("data-v-eaa0856c", Component.options)
+  }
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 78 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+  return _c('div', {
+    ref: "feed",
+    staticClass: "feed"
+  }, [(_vm.contact) ? _c('ul', _vm._l((_vm.messages), function(message) {
+    return _c('li', {
+      key: message.id,
+      class: ("message" + (message.to == _vm.contact.id ? ' sent' : ' received'))
+    }, [_c('div', {
+      staticClass: "text"
+    }, [_vm._v("\n                " + _vm._s(message.text) + "\n            ")])])
+  }), 0) : _vm._e()])
+},staticRenderFns: []}
+module.exports.render._withStripped = true
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+     require("vue-hot-reload-api").rerender("data-v-eaa0856c", module.exports)
+  }
+}
+
+/***/ }),
+/* 79 */,
+/* 80 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ __webpack_exports__["default"] = {
+    data: function data() {
+        return {
+            message: ''
+        };
+    },
+
+    methods: {
+        send: function send(e) {
+            e.preventDefault();
+
+            if (this.message == '') {
+                return;
+            }
+            this.$emit('send', this.message);
+            this.message = '';
+        }
+    }
+};
+
+/***/ }),
+/* 81 */,
+/* 82 */
+/***/ (function(module, exports, __webpack_require__) {
+
+
+/* styles */
+__webpack_require__(92)
+
+var Component = __webpack_require__(11)(
+  /* script */
+  __webpack_require__(80),
+  /* template */
+  __webpack_require__(83),
+  /* scopeId */
+  "data-v-1d01b9b7",
+  /* cssModules */
+  null
+)
+Component.options.__file = "w:\\domains\\chat5\\chat5\\laravel-chat\\resources\\assets\\js\\components\\MessageComposer.vue"
+if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
+if (Component.options.functional) {console.error("[vue-loader] MessageComposer.vue: functional components are not supported with templates, they should use render functions.")}
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-1d01b9b7", Component.options)
+  } else {
+    hotAPI.reload("data-v-1d01b9b7", Component.options)
+  }
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 83 */
+/***/ (function(module, exports, __webpack_require__) {
+
+module.exports={render:function (){var _vm=this;var _h=_vm.$createElement;var _c=_vm._self._c||_h;
+  return _c('div', {
+    staticClass: "composer"
+  }, [_c('textarea', {
+    directives: [{
+      name: "model",
+      rawName: "v-model",
+      value: (_vm.message),
+      expression: "message"
+    }],
+    attrs: {
+      "placeholder": "Message..."
+    },
+    domProps: {
+      "value": (_vm.message)
+    },
+    on: {
+      "keydown": function($event) {
+        if (!$event.type.indexOf('key') && _vm._k($event.keyCode, "enter", 13, $event.key, "Enter")) { return null; }
+        return _vm.send($event)
+      },
+      "input": function($event) {
+        if ($event.target.composing) { return; }
+        _vm.message = $event.target.value
+      }
+    }
+  })])
+},staticRenderFns: []}
+module.exports.render._withStripped = true
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+     require("vue-hot-reload-api").rerender("data-v-1d01b9b7", module.exports)
+  }
+}
+
+/***/ }),
+/* 84 */,
+/* 85 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(37)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.conversation[data-v-b9833f7a] {\n  -ms-flex: 5;\n      flex: 5;\n  display: -ms-flexbox;\n  display: flex;\n  -ms-flex-direction: column;\n      flex-direction: column;\n  -ms-flex-pack: justify;\n      justify-content: space-between;\n}\n.conversation h1[data-v-b9833f7a] {\n    font-size: 20px;\n    padding: 10px;\n    margin: 0;\n    border-bottom: 1px dashed lightgray;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 86 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(85);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(46)("9cecaa20", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-b9833f7a&scoped=true!../../../../node_modules/sass-loader/index.js!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Conversation.vue", function() {
+     var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-b9833f7a&scoped=true!../../../../node_modules/sass-loader/index.js!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./Conversation.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 87 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(37)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.chat-app[data-v-01d67219] {\n  display: -ms-flexbox;\n  display: flex;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 88 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(87);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(46)("05294511", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-01d67219&scoped=true!../../../../node_modules/sass-loader/index.js!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./ChatApp.vue", function() {
+     var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-01d67219&scoped=true!../../../../node_modules/sass-loader/index.js!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./ChatApp.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 89 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(37)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.contacts-list[data-v-1b1d7051] {\n  -ms-flex: 2;\n      flex: 2;\n  max-height: 600px;\n  overflow: scroll;\n  border-left: 1px solid #a6a6a6;\n}\n.contacts-list ul[data-v-1b1d7051] {\n    list-style-type: none;\n    padding-left: 0;\n}\n.contacts-list ul li[data-v-1b1d7051] {\n      display: -ms-flexbox;\n      display: flex;\n      padding: 2px;\n      border-bottom: 1px solid #aaaaaa;\n      height: 80px;\n      position: relative;\n      cursor: pointer;\n}\n.contacts-list ul li.selected[data-v-1b1d7051] {\n        background: #dfdfdf;\n}\n.contacts-list ul li span.unread[data-v-1b1d7051] {\n        background: #82e0a8;\n        color: #fff;\n        position: absolute;\n        right: 11px;\n        top: 20px;\n        display: -ms-flexbox;\n        display: flex;\n        font-weight: 700;\n        min-width: 20px;\n        -ms-flex-pack: center;\n            justify-content: center;\n        -ms-flex-align: center;\n            align-items: center;\n        line-height: 20px;\n        font-size: 12px;\n        padding: 0 4px;\n        border-radius: 3px;\n}\n.contacts-list ul li .avatar[data-v-1b1d7051] {\n        -ms-flex: 1;\n            flex: 1;\n        display: -ms-flexbox;\n        display: flex;\n        -ms-flex-align: center;\n            align-items: center;\n}\n.contacts-list ul li .avatar img[data-v-1b1d7051] {\n          width: 35px;\n          border-radius: 50%;\n          margin: 0 auto;\n}\n.contacts-list ul li .contact[data-v-1b1d7051] {\n        -ms-flex: 3;\n            flex: 3;\n        font-size: 10px;\n        overflow: hidden;\n        display: -ms-flexbox;\n        display: flex;\n        -ms-flex-direction: column;\n            flex-direction: column;\n        -ms-flex-pack: center;\n            justify-content: center;\n}\n.contacts-list ul li .contact p[data-v-1b1d7051] {\n          margin: 0;\n}\n.contacts-list ul li .contact p.name[data-v-1b1d7051] {\n            font-weight: bold;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 90 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(89);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(46)("fb761ce8", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-1b1d7051&scoped=true!../../../../node_modules/sass-loader/index.js!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./ContactsList.vue", function() {
+     var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-1b1d7051&scoped=true!../../../../node_modules/sass-loader/index.js!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./ContactsList.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 91 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(37)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.composer textarea[data-v-1d01b9b7] {\n  width: 96%;\n  margin: 10px;\n  resize: none;\n  border-radius: 3px;\n  border: 1px solid lightgray;\n  padding: 6px;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 92 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(91);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(46)("0d5c896e", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-1d01b9b7&scoped=true!../../../../node_modules/sass-loader/index.js!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./MessageComposer.vue", function() {
+     var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-1d01b9b7&scoped=true!../../../../node_modules/sass-loader/index.js!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./MessageComposer.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 93 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(37)();
+// imports
+
+
+// module
+exports.push([module.i, "\n.feed[data-v-eaa0856c] {\n  background: #f0f0f0;\n  height: 100%;\n  max-height: 470px;\n  overflow: scroll;\n}\n.feed ul[data-v-eaa0856c] {\n    list-style-type: none;\n    padding: 5px;\n}\n.feed ul li.message[data-v-eaa0856c] {\n      margin: 10px 0;\n      width: 100%;\n}\n.feed ul li.message .text[data-v-eaa0856c] {\n        max-width: 200px;\n        border-radius: 5px;\n        padding: 12px;\n        display: inline-block;\n}\n.feed ul li.message.received[data-v-eaa0856c] {\n        text-align: right;\n}\n.feed ul li.message.received .text[data-v-eaa0856c] {\n          background: #b2b2b2;\n}\n.feed ul li.message.sent[data-v-eaa0856c] {\n        text-align: left;\n}\n.feed ul li.message.sent .text[data-v-eaa0856c] {\n          background: #81c4f9;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 94 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(93);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(46)("bad07062", content, false);
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-eaa0856c&scoped=true!../../../../node_modules/sass-loader/index.js!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./MessagesFeed.vue", function() {
+     var newContent = require("!!../../../../node_modules/css-loader/index.js!../../../../node_modules/vue-loader/lib/style-rewriter.js?id=data-v-eaa0856c&scoped=true!../../../../node_modules/sass-loader/index.js!../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./MessagesFeed.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
 
 /***/ })
 /******/ ]);
