@@ -30,8 +30,10 @@ const app = new Vue({
             .listen('MessageSent', (e) => {
                 this.messages.push({
                     message: e.message.message,
-                    user: e.user
+                    user: e.user,
+                    date: e.message.created_at
                 });
+                console.log(this.messages)
             });
     },
 
