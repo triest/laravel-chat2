@@ -25,6 +25,7 @@
                 if (!this.contact) {
                     return;
                 }
+
                 axios.post('/conversation/send', {
                     contact_id: this.contact.id,
                     text: text

@@ -49,6 +49,8 @@
                     this.saveNewMessage(message);
                     return;
                 }
+                alert(message.text)
+
                 this.updateUnreadCount(message.from_contact, false);
             },
             updateUnreadCount(contact, reset) {

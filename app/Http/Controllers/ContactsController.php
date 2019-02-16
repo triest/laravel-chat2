@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\NewMessage;
 use App\User;
 use App\Message;
 use Illuminate\Http\Request;
@@ -49,6 +50,7 @@ class ContactsController extends Controller {
                 'to' => $request->contact_id,
                 'text' => $request->text
         ]);
+        $message->save();
         broadcast(new NewMessage($message));
         return response()->json($message);
     }
